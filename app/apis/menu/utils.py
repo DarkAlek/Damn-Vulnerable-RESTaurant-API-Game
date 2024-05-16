@@ -1,13 +1,24 @@
 import base64
-
 import requests
+from urllib.parse import urlparse
 from apis.menu import schemas
 from db.models import MenuItem
 from fastapi import HTTPException
 
 
 def _image_url_to_base64(image_url: str):
+    parsed_url = urlparse(image_url)
+    domain = parsed_url.netloc
+    allowed_domains = ["localhost"] # allowed domains for images download
+    if domain not in allowed_domains:
+        raise HTTPException(status_code=500, detail="Error!")
+    valid_extensions = (".jpg", ".jpeg", ".png", ".gif", ".bmp")
+    if not parsed_url.path.lower().endswith(valid_extensions):
+        raise HTTPException(status_code=500, detail="Error!")
     response = requests.get(image_url)
+    content_type = response.headers.get("content-type", "")
+    if not content_type.startswith("image"):
+        raise HTTPException(status_code=500, detail="Error!")
     return base64.b64encode(response.content).decode()
 
 
